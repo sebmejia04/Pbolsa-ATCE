@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Exports / archivos temporales generados por la app
+_preview_export.html
+*.xlsx
+*.html
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
