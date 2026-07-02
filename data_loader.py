@@ -52,8 +52,10 @@ def _parse_content(content: str) -> Optional[pd.DataFrame]:
                 on_bad_lines="skip",
                 dtype=str,
             )
-            # Debe tener al menos la columna de nombre + algunas horas
-            if df.shape[1] >= 5 and df.shape[0] >= 2:
+            # Debe tener al menos columna de nombre + un valor (archivos PEA/PEP
+            # traen sólo 3 columnas: CONCEPTO;DESCRIPCION;VALOR; los archivos
+            # horarios IMAR/TRSD traen 25: etiqueta + 24 horas)
+            if df.shape[1] >= 2 and df.shape[0] >= 2:
                 return df
         except Exception:
             continue
