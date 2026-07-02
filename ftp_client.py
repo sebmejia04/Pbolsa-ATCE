@@ -38,7 +38,7 @@ class FTPSClient:
             ctx.verify_mode = ssl.CERT_NONE
 
             self.ftp = ftplib.FTP_TLS(context=ctx)
-            self.ftp.connect(host=self.host, port=self.port, timeout=30)
+            self.ftp.connect(host=self.host, port=self.port, timeout=120)
             self.ftp.auth()                        # Iniciar TLS explícito
             self.ftp.login(self.user, self.password)
             self.ftp.prot_p()                      # Canal de datos cifrado
@@ -104,19 +104,33 @@ class FTPSClient:
         """
         Descarga un archivo remoto y devuelve su contenido como string.
         Retorna None si el archivo no existe o hay error.
+
+        Si la conexión se cayó (p.ej. timeout de inactividad del servidor
+        durante una descarga larga de muchos archivos), reconecta con las
+        mismas credenciales y reintenta la descarga una vez antes de darse
+        por vencido.
         """
-        if not self.is_connected():
+        if not self.is_connected() and not self.connect()[0]:
             return None
 
         buffer = io.BytesIO()
         try:
             self.ftp.retrbinary(f"RETR {remote_path}", buffer.write)
         except ftplib.error_perm:
-            # Archivo no encontrado (error 550)
+            # Archivo no encontrado (error 550) — no es un problema de conexión
             return None
         except ftplib.error_temp:
-            # Error temporal
+            # Error temporal del servidor
             return None
+        except (OSError, EOFError):
+            # Conexión perdida durante la descarga → reconectar y reintentar una vez
+            if not self.connect()[0]:
+                return None
+            buffer = io.BytesIO()
+            try:
+                self.ftp.retrbinary(f"RETR {remote_path}", buffer.write)
+            except Exception:
+                return None
         except Exception:
             return None
 
